@@ -14,7 +14,7 @@ print_with_delay() {
 # Introduction animation
 echo ""
 echo ""
-print_with_delay "hysteria-installer by ImTheSabrali" 0.1
+print_with_delay "hysteria-installer by Imoagh" 0.1
 echo ""
 echo ""
 
@@ -30,7 +30,7 @@ install_required_packages() {
 }
 
 # Check if the directory /root/hysteria already exists
-if [ -d "/root/hysteria" ]; then
+if [ -d "/root/hysteriav1" ]; then
     echo "Hysteria seems to be already installed."
     echo ""
     echo "Choose an option:"
@@ -45,16 +45,16 @@ if [ -d "/root/hysteria" ]; then
     case $choice in
         1)
             # Reinstall
-            rm -rf /root/hysteria
-            systemctl stop hysteria
+            rm -rf /root/hysteriav1
+            systemctl stop hysteriav1
             pkill -f hysteria-linux-amd64
-            systemctl disable hysteria > /dev/null 2>&1
-            rm /etc/systemd/system/hysteria.service
+            systemctl disable hysteriav1 > /dev/null 2>&1
+            rm /etc/systemd/system/hysteriav1.service
             ;;
         2)
             
             # Modify
-            cd /root/hysteria
+            cd /root/hysteriav1
 
             # Get current values
             current_port=$(jq -r '.listen' config.json | cut -d':' -f2)
@@ -84,7 +84,7 @@ if [ -d "/root/hysteria" ]; then
                 jq '.recv_window_conn = 3407872 | .recv_window = 13631488' config.json > temp.json && mv temp.json config.json
             fi
             systemctl daemon-reload
-            systemctl restart hysteria
+            systemctl restart hysteriav1
             # Print client configs
             PUBLIC_IP=$(curl -s https://api.ipify.org)
             read -p "Enter your upload speed (Mbps): " up_mbps
@@ -123,12 +123,12 @@ if [ -d "/root/hysteria" ]; then
             ;;
         3)
             # Uninstall
-            rm -rf /root/hysteria
-            systemctl stop hysteria
+            rm -rf /root/hysteriav1
+            systemctl stop hysteriav1
             pkill -f hysteria-linux-amd64
-            systemctl disable hysteria > /dev/null 2>&1
-            rm /etc/systemd/system/hysteria.service
-            echo "Hysteria uninstalled successfully!"
+            systemctl disable hysteriav1 > /dev/null 2>&1
+            rm /etc/systemd/system/hysteriav1.service
+            echo "Hysteria v1 uninstalled successfully!"
             echo ""
             exit 0
             ;;
@@ -159,10 +159,10 @@ case "$OS" in
 esac
 
 # Step 2: Download the binary
-mkdir -p /root/hysteria
-cd /root/hysteria
-wget -q "https://github.com/apernet/hysteria/releases/latest/download/$BINARY_NAME"
-chmod 755 "$BINARY_NAME"
+mkdir -p /root/hysteriav1
+cd /root/hysteriav1
+wget -q "https://github.com/apernet/hysteria/releases/download/v1.3.5/hysteria-linux-amd64"
+chmod 755 hysteria-linux-amd64
 
 # Step 3: Create self-signed certs
 openssl ecparam -genkey -name prime256v1 -out ca.key
@@ -187,8 +187,8 @@ read -p "Enable recv_window_conn and recv_window? (y/n): " recv_window_enable
 echo ""
 config_json='{
   "listen": ":'$port'",
-  "cert": "/root/hysteria/ca.crt",
-  "key": "/root/hysteria/ca.key",
+  "cert": "/root/hysteriav1/ca.crt",
+  "key": "/root/hysteriav1/ca.key",
   "obfs": "'$password'",
   "disable_mtu_discovery": true,
   "resolver": "https://223.5.5.5/dns-query"
@@ -199,7 +199,7 @@ fi
 echo "$config_json" > config.json
 
 # Step 5: Run the binary and check the log
-./"$BINARY_NAME" server > hysteria.log &
+./hysteria-linux-amd64 server > hysteria.log &
 sleep 2
 if grep -q "Server up and running" hysteria.log; then
   echo ""
@@ -213,17 +213,17 @@ else
 fi
 
 # Step 6: Create a system service
-cat > /etc/systemd/system/hysteria.service <<EOL
+cat > /etc/systemd/system/hysteriav1.service <<EOL
 [Unit]
 Description=Hysteria VPN Service
 After=network.target nss-lookup.target
 
 [Service]
 User=root
-WorkingDirectory=/root/hysteria
+WorkingDirectory=/root/hysteriav1
 CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_NET_RAW
 AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_NET_RAW
-ExecStart=/root/hysteria/$BINARY_NAME server
+ExecStart=/root/hysteriav1/hysteria-linux-amd64 server
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=always
 RestartSec=5
@@ -236,9 +236,9 @@ EOL
 
 
 systemctl daemon-reload
-systemctl enable hysteria > /dev/null 2>&1
-systemctl start hysteria
-systemctl restart hysteria
+systemctl enable hysteriav1 > /dev/null 2>&1
+systemctl start hysteriav1
+systemctl restart hysteriav1
 
 # Step 7: Generate and print two client config files
 PUBLIC_IP=$(curl -s https://api.ipify.org)
